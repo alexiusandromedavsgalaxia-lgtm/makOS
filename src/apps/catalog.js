@@ -9,7 +9,8 @@ import {
   Calculator,
   Music2,
   Image as ImageIcon,
-  Monitor
+  Monitor,
+  Wrench
 } from "lucide-react";
 
 export const APPS = {
@@ -23,7 +24,8 @@ export const APPS = {
   Music: [Music2, "linear-gradient(135deg,#ff7cbd,#9b37f2)"],
   Photos: [ImageIcon, "linear-gradient(135deg,#ffbf5f,#ef4e8a,#684cff)"],
   Downloads: [Folder, "linear-gradient(135deg,#8ed2ff,#2572d9)"],
-  System: [Monitor, "linear-gradient(135deg,#6b7280,#1f2937)"]
+  System: [Monitor, "linear-gradient(135deg,#6b7280,#1f2937)"],
+  PartsService: [Wrench, "linear-gradient(135deg,#6fa8ff,#6b55d9)"]
 };
 
 export function Icon({ name, size = 24 }) {
