@@ -4,17 +4,131 @@ import{loadFS,saveFS,DEFAULT_FS}from"../system/filesystem.js";
 import{kernelSnapshot}from"../system/kernel.js";
 
 const CFG="makOS.setup.v1";
-export default function PartsService({onRestart}){const[section,setSection]=useState("Parts & Service"),[fs,setFs]=useState(loadFS),[message,setMessage]=useState(""),[cfg,setCfg]=useState(()=>{try{return JSON.parse(localStorage.getItem(CFG))||{name:"mako",region:"ES",language:"es-ES",diagnostics:true}}catch{return{name:"mako",region:"ES",language:"es-ES",diagnostics:true}}});
-const snap=kernelSnapshot(fs);
-const saveCfg=n=>{setCfg(n);localStorage.setItem(CFG,JSON.stringify(n));setMessage("Configuration saved");setTimeout(()=>setMessage(""),1600)};
-const reset=()=>{if(!confirm("Reset makOS configuration and filesystem to factory defaults?"))return;saveFS(JSON.parse(JSON.stringify(DEFAULT_FS)));setFs(loadFS());localStorage.removeItem(CFG);localStorage.removeItem("makOS.notes.v2");localStorage.removeItem("makOS.calendar.v2");localStorage.removeItem("makOS.photos.v2");setMessage("Factory reset completed")};
-const repair=()=>{const n=loadFS();const fixed={...DEFAULT_FS,...n};saveFS(fixed);setFs(fixed);setMessage("Filesystem repaired")};
-const nav=["Parts & Service","Error Center","Initial Configuration"];
-return <div className="serviceApp"><aside className="serviceSide"><div className="serviceBrand"><div className="serviceLogo">M</div><div><b>makOS Service</b><small>System Utility</small></div></div>{nav.map((x,i)=><button className={section===x?"sel":""} key={x} onClick={()=>setSection(x)}>{i===0?<Wrench/>:i===1?<AlertTriangle/>:<Settings2/>}{x}<ChevronRight/></button>)}</aside><main className="serviceMain">
-{section==="Parts & Service"&&<><header><div><span className="serviceEyebrow">HARDWARE & SOFTWARE</span><h1>Parts & Service</h1><p>Inspect the virtual machine, filesystem and core makOS components.</p></div><button className="serviceAction" onClick={repair}><RefreshCw/> Repair filesystem</button></header><div className="serviceGrid"><Card icon={<Cpu/>} title="makKernel" value={snap.kernel.version} detail={snap.kernel.arch} ok/><Card icon={<HardDrive/>} title="makFS" value={String(snap.storage.entries)+" entries"} detail="Filesystem mounted at /" ok/><Card icon={<ShieldCheck/>} title="System Integrity" value="Operational" detail="Core services available" ok/><Card icon={<Settings2/>} title="Configuration" value={cfg.name} detail={cfg.language+" · "+cfg.region} ok/></div><section className="servicePanel"><h3>Components</h3>{[["Bootloader","/System/Boot/boot.efi","Ready"],["Kernel","/System/Kernel","Loaded"],["CoreServices","/System/Library/CoreServices","Mounted"],["Userspace","/Users/mako","Ready"]].map(x=><div className="serviceRow" key={x[0]}><b>{x[0]}</b><span>{x[1]}</span><em><CheckCircle2/> {x[2]}</em></div>)}</section></>}
-{section==="Error Center"&&<ErrorCenter fs={fs}/>}
-{section==="Initial Configuration"&&<Setup cfg={cfg} save={saveCfg} reset={reset}/>}
-{message&&<div className="serviceToast">{message}</div>}</main></div>}
-function Card({icon,title,value,detail}){return <div className="serviceCard">{icon}<div><b>{title}</b><strong>{value}</strong><small>{detail}</small></div><CheckCircle2 className="ok"/></div>}
-function ErrorCenter({fs}){const errors=[];\nif(!fs["/"])errors.push(["FS-001","Root filesystem is missing","critical"]);\nif(!fs["/System/Kernel"])errors.push(["KRN-001","Kernel image is missing","critical"]);\nif(!fs["/System/Boot/boot.efi"])errors.push(["BOOT-001","Bootloader image is missing","critical"]);\nif(!fs["/System/Boot/boot.cfg"])errors.push(["BOOT-002","Boot configuration is missing","warning"]);\nif(!fs["/System/Library/CoreServices"])errors.push(["SYS-001","CoreServices directory is missing","warning"]);\nif(!fs["/Users/mako"])errors.push(["USR-001","Default user home is missing","warning"]);return <><header><div><span className="serviceEyebrow">DIAGNOSTICS</span><h1>Error Center</h1><p>Recent system checks and recoverable faults.</p></div></header><div className="errorSummary"><AlertTriangle/><div><b>{errors.length?"Issues detected":"No active errors"}</b><span>{errors.length?"Review the entries below.":"makOS completed its startup diagnostics successfully."}</span></div></div><section className="servicePanel">{errors.length?errors.map(e=><div className="errorRow" key={e[0]}><AlertTriangle/><div><b>{e[0]} · {e[1]}</b><span>{e[2]==="critical"?"System component required":"Component should be restored"}</span></div><em>{e[2]}</em></div>):<div className="cleanState"><CheckCircle2/><b>Everything looks good.</b><span>No filesystem or core boot errors were found.</span></div>}</section><section className="servicePanel"><h3>Diagnostic log</h3><pre>{new Date().toISOString()+"  boot: OK\n"+new Date().toISOString()+"  kernel: OK\n"+new Date().toISOString()+"  makFS: "+(fs["/"]?"OK":"FAIL")}</pre></section></>}
-function Setup({cfg,save,reset}){const[n,setN]=useState(cfg);const update=(k,v)=>setN(x=>({...x,[k]:v}));return <><header><div><span className="serviceEyebrow">WELCOME TO MAKOS</span><h1>Initial Configuration</h1><p>Choose the basic settings used when makOS starts for the first time.</p></div><button className="serviceAction" onClick={()=>save(n)}><CheckCircle2/> Save configuration</button></header><div className="setupGrid"><label><span>Computer name</span><input value={n.name} onChange={e=>update("name",e.target.value)}/></label><label><span>Language</span><select value={n.language} onChange={e=>update("language",e.target.value)}><option value="es-ES">Español</option><option value="en-US">English</option><option value="fr-FR">Français</option><option value="de-DE">Deutsch</option></select></label><label><span>Region</span><select value={n.region} onChange={e=>update("region",e.target.value)}><option>ES</option><option>US</option><option>GB</option><option>FR</option><option>DE</option></select></label><label className="toggleRow"><span>Share diagnostic reports</span><input type="checkbox" checked={n.diagnostics} onChange={e=>update("diagnostics",e.target.checked)}/></label></div><div className="setupSteps"><div><b>1</b><span>Account</span><small>{n.name}</small></div><div><b>2</b><span>Region</span><small>{n.region}</small></div><div><b>3</b><span>Language</span><small>{n.language}</small></div><div><b>4</b><span>Diagnostics</span><small>{n.diagnostics?"Enabled":"Disabled"}</small></div></div><button className="factoryButton" onClick={reset}>Reset makOS to factory defaults</button></>}
+const defaultConfig={name:"mako",region:"ES",language:"es-ES",diagnostics:true};
+
+function readConfig(){
+  try{return JSON.parse(localStorage.getItem(CFG))||defaultConfig}
+  catch{return defaultConfig}
+}
+
+export default function PartsService(){
+  const[section,setSection]=useState("Parts & Service");
+  const[fs,setFs]=useState(loadFS);
+  const[message,setMessage]=useState("");
+  const[cfg,setCfg]=useState(readConfig);
+  const snap=kernelSnapshot(fs);
+
+  const notify=message=>{
+    setMessage(message);
+    window.setTimeout(()=>setMessage(""),1600);
+  };
+
+  const saveCfg=n=>{
+    const safe={...defaultConfig,...n};
+    setCfg(safe);
+    localStorage.setItem(CFG,JSON.stringify(safe));
+    notify("Configuration saved");
+  };
+
+  const reset=()=>{
+    if(!window.confirm("Reset makOS configuration and filesystem to factory defaults?"))return;
+    const fresh=JSON.parse(JSON.stringify(DEFAULT_FS));
+    saveFS(fresh);
+    setFs(fresh);
+    localStorage.removeItem(CFG);
+    localStorage.removeItem("makOS.notes.v2");
+    localStorage.removeItem("makOS.calendar.v2");
+    localStorage.removeItem("makOS.photos.v2");
+    localStorage.removeItem("makOS.fs.v1");
+    saveFS(fresh);
+    setCfg(defaultConfig);
+    notify("Factory reset completed");
+  };
+
+  const repair=()=>{
+    const current=loadFS();
+    const fixed={...JSON.parse(JSON.stringify(DEFAULT_FS)),...current};
+    saveFS(fixed);
+    setFs(fixed);
+    notify("Filesystem repaired");
+  };
+
+  const nav=["Parts & Service","Error Center","Initial Configuration"];
+
+  return <div className="serviceApp">
+    <aside className="serviceSide">
+      <div className="serviceBrand"><div className="serviceLogo">M</div><div><b>makOS Service</b><small>System Utility</small></div></div>
+      {nav.map((x,i)=><button className={section===x?"sel":""} key={x} onClick={()=>setSection(x)}>
+        {i===0?<Wrench/>:i===1?<AlertTriangle/>:<Settings2/>}{x}<ChevronRight/>
+      </button>)}
+    </aside>
+    <main className="serviceMain">
+      {section==="Parts & Service"&&<ServiceOverview fs={fs} cfg={cfg} snap={snap} repair={repair}/>}
+      {section==="Error Center"&&<ErrorCenter fs={fs}/>}
+      {section==="Initial Configuration"&&<Setup cfg={cfg} save={saveCfg} reset={reset}/>}
+      {message&&<div className="serviceToast">{message}</div>}
+    </main>
+  </div>;
+}
+
+function ServiceOverview({fs,cfg,snap,repair}){
+  const components=[
+    ["Bootloader","/System/Boot/boot.efi",fs["/System/Boot/boot.efi"]?"Ready":"Missing"],
+    ["Kernel","/System/Kernel",fs["/System/Kernel"]?"Loaded":"Missing"],
+    ["CoreServices","/System/Library/CoreServices",fs["/System/Library/CoreServices"]?"Mounted":"Missing"],
+    ["Userspace","/Users/mako",fs["/Users/mako"]?"Ready":"Missing"]
+  ];
+  return <>
+    <header><div><span className="serviceEyebrow">HARDWARE & SOFTWARE</span><h1>Parts & Service</h1><p>Inspect the virtual machine, filesystem and core makOS components.</p></div><button className="serviceAction" onClick={repair}><RefreshCw/> Repair filesystem</button></header>
+    <div className="serviceGrid">
+      <Card icon={<Cpu/>} title="makKernel" value={snap.kernel.version} detail={snap.kernel.arch}/>
+      <Card icon={<HardDrive/>} title="makFS" value={String(snap.storage.entries)+" entries"} detail="Filesystem mounted at /"/>
+      <Card icon={<ShieldCheck/>} title="System Integrity" value="Operational" detail="Core services available"/>
+      <Card icon={<Settings2/>} title="Configuration" value={cfg.name} detail={cfg.language+" · "+cfg.region}/>
+    </div>
+    <section className="servicePanel"><h3>Components</h3>{components.map(x=><div className="serviceRow" key={x[0]}><b>{x[0]}</b><span>{x[1]}</span><em className={x[2]==="Missing"?"serviceBad":""}>{x[2]==="Missing"?<AlertTriangle/>:<CheckCircle2/>} {x[2]}</em></div>)}</section>
+  </>;
+}
+
+function Card({icon,title,value,detail}){
+  return <div className="serviceCard">{icon}<div><b>{title}</b><strong>{value}</strong><small>{detail}</small></div><CheckCircle2 className="ok"/></div>;
+}
+
+function ErrorCenter({fs}){
+  const errors=[];
+  if(!fs["/"])errors.push(["FS-001","Root filesystem is missing","critical"]);
+  if(!fs["/System/Kernel"])errors.push(["KRN-001","Kernel image is missing","critical"]);
+  if(!fs["/System/Boot/boot.efi"])errors.push(["BOOT-001","Bootloader image is missing","critical"]);
+  if(!fs["/System/Boot/boot.cfg"])errors.push(["BOOT-002","Boot configuration is missing","warning"]);
+  if(!fs["/System/Library/CoreServices"])errors.push(["SYS-001","CoreServices directory is missing","warning"]);
+  if(!fs["/Users/mako"])errors.push(["USR-001","Default user home is missing","warning"]);
+
+  const bootOk=Boolean(fs["/System/Boot/boot.efi"]&&fs["/System/Boot/boot.cfg"]);
+  const kernelOk=Boolean(fs["/System/Kernel"]);
+  const coreOk=Boolean(fs["/System/Library/CoreServices"]);
+  const userOk=Boolean(fs["/Users/mako"]);
+  const fsOk=Boolean(fs["/"]);
+
+  return <>
+    <header><div><span className="serviceEyebrow">DIAGNOSTICS</span><h1>Error Center</h1><p>Recent system checks and recoverable faults.</p></div></header>
+    <div className="errorSummary"><AlertTriangle/><div><b>{errors.length?"Issues detected":"No active errors"}</b><span>{errors.length?"Review the entries below.":"makOS completed its startup diagnostics successfully."}</span></div></div>
+    <section className="servicePanel">{errors.length?errors.map(e=><div className="errorRow" key={e[0]}><AlertTriangle/><div><b>{e[0]} · {e[1]}</b><span>{e[2]==="critical"?"System component required":"Component should be restored"}</span></div><em>{e[2]}</em></div>):<div className="cleanState"><CheckCircle2/><b>Everything looks good.</b><span>No filesystem or core boot errors were found.</span></div>}</section>
+    <section className="servicePanel"><h3>Diagnostic log</h3><pre>{new Date().toISOString()+"  boot: "+(bootOk?"OK":"FAIL")+"\n"+new Date().toISOString()+"  kernel: "+(kernelOk?"OK":"FAIL")+"\n"+new Date().toISOString()+"  core services: "+(coreOk?"OK":"FAIL")+"\n"+new Date().toISOString()+"  user: "+(userOk?"OK":"FAIL")+"\n"+new Date().toISOString()+"  makFS: "+(fsOk?"OK":"FAIL")}</pre></section>
+  </>;
+}
+
+function Setup({cfg,save,reset}){
+  const[n,setN]=useState(cfg);
+  const update=(k,v)=>setN(x=>({...x,[k]:v}));
+  return <>
+    <header><div><span className="serviceEyebrow">WELCOME TO MAKOS</span><h1>Initial Configuration</h1><p>Choose the basic settings used when makOS starts for the first time.</p></div><button className="serviceAction" onClick={()=>save(n)}><CheckCircle2/> Save configuration</button></header>
+    <div className="setupGrid">
+      <label><span>Computer name</span><input value={n.name} onChange={e=>update("name",e.target.value)}/></label>
+      <label><span>Language</span><select value={n.language} onChange={e=>update("language",e.target.value)}><option value="es-ES">Español</option><option value="en-US">English</option><option value="fr-FR">Français</option><option value="de-DE">Deutsch</option></select></label>
+      <label><span>Region</span><select value={n.region} onChange={e=>update("region",e.target.value)}><option>ES</option><option>US</option><option>GB</option><option>FR</option><option>DE</option></select></label>
+      <label className="toggleRow"><span>Share diagnostic reports</span><input type="checkbox" checked={n.diagnostics} onChange={e=>update("diagnostics",e.target.checked)}/></label>
+    </div>
+    <div className="setupSteps"><div><b>1</b><span>Account</span><small>{n.name}</small></div><div><b>2</b><span>Region</span><small>{n.region}</small></div><div><b>3</b><span>Language</span><small>{n.language}</small></div><div><b>4</b><span>Diagnostics</span><small>{n.diagnostics?"Enabled":"Disabled"}</small></div></div>
+    <button className="factoryButton" onClick={reset}>Reset makOS to factory defaults</button>
+  </>;
+}
