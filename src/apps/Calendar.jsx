@@ -1,0 +1,1 @@
+import React from"react";export default function Calendar(){return <div className="calendar"><h1>{new Date().toLocaleString([],{month:"long",year:"numeric"})}</h1><div className="week">{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(x=><b key={x}>{x}</b>)}{Array.from({length:35},(_,i)=><span key={i}>{i<2?"":((i-1)%31)+1}</span>)}</div></div>}
