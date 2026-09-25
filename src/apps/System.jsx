@@ -1,0 +1,1 @@
+import React from"react";import{Power}from"lucide-react";export default function System(){return <div className="system"><Power size={54}/><h1>makOS Tahoe</h1><p>Web edition</p></div>}
