@@ -1,0 +1,1 @@
+import React from"react";import{Image as ImageIcon}from"lucide-react";export default function Photos(){return <div className="photos"><div className="photoHero"><ImageIcon size={80}/><h1>Photo Library</h1><p>Your visual workspace.</p></div><div className="photoGrid">{["Aurora","Glass","Ocean","Sunset","City","Mountain"].map(x=><div key={x}>{x}</div>)}</div></div>}
