@@ -1,0 +1,2 @@
+export const KERNEL={name:"makKernel",version:"1.0",arch:"browser-arm64",pidMax:32768};
+export function kernelSnapshot(fs){return {kernel:KERNEL,processes:[{pid:1,name:"init",state:"running"},{pid:2,name:"launchd",state:"running"},{pid:42,name:"WindowServer",state:"running"},{pid:108,name:"Finder",state:"sleeping"}],mounts:[{device:"makOS-root",path:"/",fs:"makFS"}],storage:{entries:Object.keys(fs).length}}}
