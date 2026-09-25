@@ -1,0 +1,1 @@
+import React,{useState}from"react";import{Plus}from"lucide-react";export default function Notes(){const[text,setText]=useState("Welcome to makOS Notes\n\nThis is a local note.");return <div className="notes"><aside><button className="sel">Quick Note</button><button><Plus size={16}/>New Note</button></aside><textarea value={text} onChange={e=>setText(e.target.value)}/></div>}
