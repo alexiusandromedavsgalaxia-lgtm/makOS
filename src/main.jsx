@@ -62,19 +62,31 @@ function Window({data,active,onFocus,onClose,update,dark,setDark}){
 function TouchMouse(){
  const[pos,setPos]=useState({x:-100,y:-100,visible:false,down:false});
  const timer=useRef(null);
+ const hide=()=>{clearTimeout(timer.current);timer.current=setTimeout(()=>setPos(p=>({...p,visible:false,down:false})),850)};
  useEffect(()=>{
-  const move=e=>{
+  const locate=e=>{
    if(e.pointerType!=="touch")return;
-   setPos({x:e.clientX+14,y:e.clientY+14,visible:true,down:false});
-   clearTimeout(timer.current);
-   timer.current=setTimeout(()=>setPos(p=>({...p,visible:false,down:false})),1400);
+   const el=document.elementFromPoint(e.clientX,e.clientY);
+   const clickable=el?.closest?.("button,a,[role=button],input,select,textarea,[data-clickable]");
+   setPos({x:e.clientX+18,y:e.clientY-18,visible:true,down:false,clickable:!!clickable});
+   hide();
   };
-  const down=e=>{if(e.pointerType!=="touch")return;setPos({x:e.clientX+14,y:e.clientY+14,visible:true,down:true});clearTimeout(timer.current)};
-  const up=e=>{if(e.pointerType!=="touch")return;setPos(p=>({...p,x:e.clientX+14,y:e.clientY+14,down:false}));clearTimeout(timer.current);timer.current=setTimeout(()=>setPos(p=>({...p,visible:false,down:false})),900)};
-  window.addEventListener("pointermove",move,{passive:true});window.addEventListener("pointerdown",down,{passive:true});window.addEventListener("pointerup",up,{passive:true});
-  return()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerdown",down);window.removeEventListener("pointerup",up);clearTimeout(timer.current)};
+  const down=e=>{if(e.pointerType!=="touch")return;clearTimeout(timer.current);setPos(p=>({...p,x:e.clientX+18,y:e.clientY-18,visible:true,down:true}))};
+  const up=e=>{if(e.pointerType!=="touch")return;setPos(p=>({...p,x:e.clientX+18,y:e.clientY-18,visible:true,down:false}));hide()};
+  const cancel=e=>{if(e.pointerType!=="touch")return;hide()};
+  window.addEventListener("pointermove",locate,{passive:true});
+  window.addEventListener("pointerdown",down,{passive:true});
+  window.addEventListener("pointerup",up,{passive:true});
+  window.addEventListener("pointercancel",cancel,{passive:true});
+  return()=>{window.removeEventListener("pointermove",locate);window.removeEventListener("pointerdown",down);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",cancel);clearTimeout(timer.current)};
  },[]);
- return <div className={"touchMouse "+(pos.visible?"show ":"")+(pos.down?"pressed":"")} style={{left:pos.x,top:pos.y}} aria-hidden="true"><span className="touchMouseArrow"/><span className="touchMouseRing"/></div>
+ return <div className={"touchMouse "+(pos.visible?"show ":"")+(pos.down?" pressed":"")+(pos.clickable?" clickable":"")} style={{left:pos.x,top:pos.y}} aria-hidden="true">
+   <svg className="touchMousePointer" width="30" height="38" viewBox="0 0 30 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5.2 2.8C3.55 1.62 1.55 2.78 1.78 4.78L5.3 32.42C5.55 34.38 8.03 35.08 9.25 33.5L14.02 27.28L19.58 35.05C20.55 36.42 22.46 36.72 23.82 35.75L25.08 34.86C26.45 33.9 26.76 31.98 25.79 30.62L20.24 22.85L27.4 21.05C29.33 20.56 29.72 18.02 28.02 16.97L5.2 2.8Z" fill="#000" stroke="#fff" stroke-width="2.7" stroke-linejoin="round"/>
+    <path d="M7.4 7.1L9.95 27.2L13.55 22.5L18.65 29.65" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity=".9"/>
+   </svg>
+   {pos.clickable&&<span className="touchMouseHint"/>}
+ </div>
 }
 function Dock({apps,windows,active,open,launch,trash}){return <nav className="dock">{apps.map(x=><button key={x} className={active===x?"dockActive":""} onClick={()=>open(x)} title={x}><Icon name={x} size={25}/>{windows.some(w=>w.app===x)&&<i/>}</button>)}<span className="dockSep"/><button onClick={launch} title="Launchpad"><Grid2X2 size={25}/></button><button onClick={trash} title="Trash"><Trash2 size={25}/></button></nav>}
 function Spotlight({apps,onClose,open}){const[q,setQ]=useState("");const results=useMemo(()=>apps.filter(x=>x.toLowerCase().includes(q.toLowerCase())),[apps,q]);return <div className="overlay" onClick={onClose}><div className="spotlight" onClick={e=>e.stopPropagation()}><div className="spotInput"><Search/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Search makOS"/></div>{results.map(x=><button key={x} onClick={()=>{open(x);onClose()}}><Icon name={x} size={24}/><span>{x}</span></button>)}</div></div>}
