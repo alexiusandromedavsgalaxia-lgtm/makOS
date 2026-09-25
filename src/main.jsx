@@ -34,6 +34,7 @@ function App(){
    {windows.map(w=><Window key={w.id} data={w} active={active===w.app} onFocus={()=>focus(w.app)} onClose={()=>close(w.app)} update={patch=>setWindows(ws=>ws.map(x=>x.id===w.id?{...x,...patch}:x))} dark={dark} setDark={setDark}/>)}
   </main>
   {context&&<ContextMenu x={context.x} y={context.y} open={open} spotlight={()=>setSpot(true)} settings={()=>open("Settings")}/>}
+  <TouchMouse/>
   <Dock apps={apps} windows={windows} active={active} open={toggle} launch={()=>setLaunch(v=>!v)} trash={()=>open("Finder")}/>
   {spot&&<Spotlight apps={apps} onClose={()=>setSpot(false)} open={open}/>}
   {launch&&<Launchpad apps={apps} open={open} onClose={()=>setLaunch(false)}/>}
@@ -57,6 +58,23 @@ function Window({data,active,onFocus,onClose,update,dark,setDark}){
   <div className="titlebar" onMouseDown={startDrag} onDoubleClick={()=>update({maximized:!data.maximized})}><div className="traffic"><button className="red" onMouseDown={e=>e.stopPropagation()} onClick={onClose}><X size={9}/></button><button className="yellow" onMouseDown={e=>e.stopPropagation()} onClick={()=>update({minimized:true})}><Minimize2 size={8}/></button><button className="green" onMouseDown={e=>e.stopPropagation()} onClick={()=>update({maximized:!data.maximized})}><Maximize2 size={8}/></button></div><strong>{data.app}</strong><span/></div>
   <div className="windowBody">{body}</div>{!data.maximized&&<div className="resizeHandle" onMouseDown={startResize}/>}
  </section>
+}
+function TouchMouse(){
+ const[pos,setPos]=useState({x:-100,y:-100,visible:false,down:false});
+ const timer=useRef(null);
+ useEffect(()=>{
+  const move=e=>{
+   if(e.pointerType!=="touch")return;
+   setPos({x:e.clientX+14,y:e.clientY+14,visible:true,down:false});
+   clearTimeout(timer.current);
+   timer.current=setTimeout(()=>setPos(p=>({...p,visible:false,down:false})),1400);
+  };
+  const down=e=>{if(e.pointerType!=="touch")return;setPos({x:e.clientX+14,y:e.clientY+14,visible:true,down:true});clearTimeout(timer.current)};
+  const up=e=>{if(e.pointerType!=="touch")return;setPos(p=>({...p,x:e.clientX+14,y:e.clientY+14,down:false}));clearTimeout(timer.current);timer.current=setTimeout(()=>setPos(p=>({...p,visible:false,down:false})),900)};
+  window.addEventListener("pointermove",move,{passive:true});window.addEventListener("pointerdown",down,{passive:true});window.addEventListener("pointerup",up,{passive:true});
+  return()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerdown",down);window.removeEventListener("pointerup",up);clearTimeout(timer.current)};
+ },[]);
+ return <div className={"touchMouse "+(pos.visible?"show ":"")+(pos.down?"pressed":"")} style={{left:pos.x,top:pos.y}} aria-hidden="true"><span className="touchMouseArrow"/><span className="touchMouseRing"/></div>
 }
 function Dock({apps,windows,active,open,launch,trash}){return <nav className="dock">{apps.map(x=><button key={x} className={active===x?"dockActive":""} onClick={()=>open(x)} title={x}><Icon name={x} size={25}/>{windows.some(w=>w.app===x)&&<i/>}</button>)}<span className="dockSep"/><button onClick={launch} title="Launchpad"><Grid2X2 size={25}/></button><button onClick={trash} title="Trash"><Trash2 size={25}/></button></nav>}
 function Spotlight({apps,onClose,open}){const[q,setQ]=useState("");const results=useMemo(()=>apps.filter(x=>x.toLowerCase().includes(q.toLowerCase())),[apps,q]);return <div className="overlay" onClick={onClose}><div className="spotlight" onClick={e=>e.stopPropagation()}><div className="spotInput"><Search/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Search makOS"/></div>{results.map(x=><button key={x} onClick={()=>{open(x);onClose()}}><Icon name={x} size={24}/><span>{x}</span></button>)}</div></div>}
