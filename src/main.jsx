@@ -24,7 +24,7 @@ function App(){
    {windows.map((app,i)=><Window key={app} app={app} index={i} active={active===app} onFocus={()=>setActive(app)} onClose={()=>close(app)} dark={dark} setDark={setDark}/>)}
   </main>
   {context&&<div className="desktopContext" style={{left:context.x,top:context.y}} onClick={e=>e.stopPropagation()}><button onClick={()=>open("Finder")}>New Finder window</button><button onClick={()=>setSpot(true)}>Search with Spotlight</button><button onClick={()=>open("Settings")}>Desktop Settings</button><button onClick={()=>location.reload()}>Refresh Desktop</button></div>}
-  <Dock apps={[...apps,"PartsService"]} windows={windows} active={active} open={toggle} launch={()=>setLaunch(v=>!v)} trash={()=>open("Finder")}/>
+  <Dock apps={apps} windows={windows} active={active} open={toggle} launch={()=>setLaunch(v=>!v)} trash={()=>open("Finder")}/>
   {spot&&<Spotlight apps={apps} onClose={()=>setSpot(false)} open={open}/>}
   {launch&&<Launchpad apps={apps} open={open} onClose={()=>setLaunch(false)}/>}
  </div>
